@@ -180,10 +180,14 @@
 	}
 
 	function getDirections(property: Property) {
-		// Uses Google Maps URL which works on both iOS and Android
-		// Opens native app if installed, otherwise opens in browser
 		const dest = `${property.lat},${property.lon}`;
 		const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+		window.open(url, '_blank');
+	}
+
+	function openRedfin(property: Property) {
+		const query = encodeURIComponent(property.address + ', Jupiter, FL');
+		const url = `https://www.redfin.com/search?q=${query}`;
 		window.open(url, '_blank');
 	}
 
@@ -412,9 +416,14 @@
 			<div class="modal-price">{selectedProperty.price ? '$' + selectedProperty.price.toLocaleString() : 'Price N/A'}</div>
 			<div class="modal-details">{selectedProperty.beds} bd · {selectedProperty.baths} ba · {selectedProperty.sqFt.toLocaleString()} sqft</div>
 
-			<button class="directions-btn-large" onclick={() => getDirections(selectedProperty)}>
-				🧭 Get Directions
-			</button>
+			<div class="modal-actions">
+				<button class="action-btn directions" onclick={() => getDirections(selectedProperty)}>
+					🧭 Directions
+				</button>
+				<button class="action-btn redfin" onclick={() => openRedfin(selectedProperty)}>
+					🏠 Redfin
+				</button>
+			</div>
 
 			{#if selectedProperty.notes}
 				<div class="modal-original-notes">"{selectedProperty.notes}"</div>
@@ -778,22 +787,34 @@
 		margin-bottom: 12px;
 	}
 
-	.directions-btn-large {
-		width: 100%;
+	.modal-actions {
+		display: flex;
+		gap: 10px;
+		margin-bottom: 16px;
+	}
+
+	.action-btn {
+		flex: 1;
 		padding: 12px;
-		background: #2D5016;
 		color: white;
 		border: none;
 		border-radius: 10px;
-		font-size: 1rem;
+		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
-		margin-bottom: 16px;
-		transition: background 0.2s;
+		transition: opacity 0.2s;
 	}
 
-	.directions-btn-large:hover {
-		background: #1D3610;
+	.action-btn:hover {
+		opacity: 0.9;
+	}
+
+	.action-btn.directions {
+		background: #2D5016;
+	}
+
+	.action-btn.redfin {
+		background: #A02021;
 	}
 
 	.modal-original-notes {
