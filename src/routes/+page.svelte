@@ -115,7 +115,8 @@
 
 	function openStatusModal(property: Property) {
 		selectedProperty = property;
-		notesValue = getStatus(property.id).notes;
+		const savedNotes = getStatus(property.id).notes;
+		notesValue = savedNotes || property.notes;
 		showStatusModal = true;
 	}
 
@@ -379,8 +380,8 @@
 					{property.beds} bd · {property.baths} ba · {property.sqFt.toLocaleString()} sqft · {property.yearBuilt}
 					{#if property.hasPool}<span class="pool-badge">Pool</span>{/if}
 				</div>
-				{#if property.notes}
-					<div class="notes">"{property.notes}"</div>
+				{#if status.notes || property.notes}
+					<div class="notes">"{status.notes || property.notes}"</div>
 				{/if}
 				<div class="card-footer">
 					<span class="status-badge" style="background: {statusColors[status.status]}">{statusLabels[status.status]}</span>
@@ -425,11 +426,7 @@
 				</button>
 			</div>
 
-			{#if selectedProperty.notes}
-				<div class="modal-original-notes">"{selectedProperty.notes}"</div>
-			{/if}
-
-			<label class="notes-label" for="status-notes">Your Notes</label>
+			<label class="notes-label" for="status-notes">Notes</label>
 			<textarea
 				id="status-notes"
 				placeholder="Add notes about your visit..."
