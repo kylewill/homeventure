@@ -387,8 +387,8 @@
 				style="border-left: 4px solid {statusColors[status.status]}"
 				role="button"
 				tabindex="0"
-				onclick={() => panToProperty(property)}
-				onkeydown={(e) => e.key === 'Enter' && panToProperty(property)}
+				onclick={() => { panToProperty(property); openStatusModal(property); }}
+				onkeydown={(e) => { if (e.key === 'Enter') { panToProperty(property); openStatusModal(property); } }}
 			>
 				<div class="card-header">
 					<span class="price">{property.price ? '$' + property.price.toLocaleString() : 'Price N/A'}</span>
