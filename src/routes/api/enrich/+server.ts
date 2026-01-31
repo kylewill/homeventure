@@ -20,6 +20,7 @@ interface EnrichedProperty {
 	hasPool?: boolean;
 	construction?: string;
 	source?: string;
+	sourceUrl?: string;
 }
 
 // Use Gemini Flash to parse property details from search results
@@ -122,9 +123,16 @@ function parsePropertyDetails(results: SerperResult[]): EnrichedProperty {
 	const redfinResult = results.find(r => r.link.includes('redfin.com'));
 	const realtorResult = results.find(r => r.link.includes('realtor.com'));
 
-	if (zillowResult) enriched.source = 'zillow';
-	else if (redfinResult) enriched.source = 'redfin';
-	else if (realtorResult) enriched.source = 'realtor';
+	if (zillowResult) {
+		enriched.source = 'Zillow';
+		enriched.sourceUrl = zillowResult.link;
+	} else if (redfinResult) {
+		enriched.source = 'Redfin';
+		enriched.sourceUrl = redfinResult.link;
+	} else if (realtorResult) {
+		enriched.source = 'Realtor';
+		enriched.sourceUrl = realtorResult.link;
+	}
 
 	return enriched;
 }

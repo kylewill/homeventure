@@ -36,6 +36,7 @@
 	let hasPool = $state(false);
 	let notes = $state('');
 	let enrichmentSource = $state('');
+	let enrichmentUrl = $state('');
 	let showManualCoords = $state(false);
 	let manualLat = $state<number | null>(null);
 	let manualLon = $state<number | null>(null);
@@ -52,6 +53,7 @@
 		price = null;
 		hasPool = false;
 		enrichmentSource = '';
+		enrichmentUrl = '';
 	}
 
 	function getEffectiveLat(): number {
@@ -140,6 +142,7 @@
 				if (enriched.price) price = enriched.price;
 				if (enriched.hasPool) hasPool = enriched.hasPool;
 				if (enriched.source) enrichmentSource = enriched.source;
+				if (enriched.sourceUrl) enrichmentUrl = enriched.sourceUrl;
 			}
 		} catch (error) {
 			console.error('Enrichment failed:', error);
@@ -291,7 +294,14 @@
 				<div class="enriching">Searching for property details...</div>
 			{:else}
 				{#if enrichmentSource}
-					<div class="enrichment-source">Details from {enrichmentSource}</div>
+					<div class="enrichment-source">
+						Details from
+						{#if enrichmentUrl}
+							<a href={enrichmentUrl} target="_blank">{enrichmentSource}</a>
+						{:else}
+							{enrichmentSource}
+						{/if}
+					</div>
 				{/if}
 
 				<div class="form-grid">
@@ -639,7 +649,16 @@
 		font-size: 0.75rem;
 		color: #888;
 		margin-bottom: 12px;
-		text-transform: capitalize;
+	}
+
+	.enrichment-source a {
+		color: #8B4513;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.enrichment-source a:hover {
+		text-decoration: underline;
 	}
 
 	.form-grid {
