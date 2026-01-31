@@ -9,7 +9,7 @@
 	let userMarker: L.Marker;
 	let userLocation: { lat: number; lon: number } | null = $state(null);
 	let watchId: number;
-	let propertyStatuses: Record<number, PropertyStatus> = $state(data.statuses || {});
+	let propertyStatuses: Record<number, PropertyStatus> = $state({...data.statuses});
 	let selectedProperty: Property | null = $state(null);
 	let showStatusModal = $state(false);
 	let filterStatus = $state<string>('active');
@@ -245,11 +245,10 @@
 			<h2>{selectedProperty.address}</h2>
 			<p class="modal-notes">{selectedProperty.notes}</p>
 
-			{@const currentStatus = getStatus(selectedProperty.id)}
 			<textarea
 				id="status-notes"
 				placeholder="Add notes..."
-				value={currentStatus.notes}
+				value={getStatus(selectedProperty.id).notes}
 			></textarea>
 
 			<div class="status-buttons">
