@@ -6,25 +6,17 @@
 		added: { property: any };
 	}>();
 
-	interface NominatimResult {
-		place_id: number;
-		display_name: string;
-		lat: string;
-		lon: string;
-		address: {
-			house_number?: string;
-			road?: string;
-			city?: string;
-			town?: string;
-			village?: string;
-			state?: string;
-			postcode?: string;
-		};
+	interface AddressSuggestion {
+		address: string;
+		fullAddress: string;
+		lat: number;
+		lon: number;
+		source: 'nominatim' | 'serper';
 	}
 
 	let searchQuery = $state('');
-	let suggestions = $state<NominatimResult[]>([]);
-	let selectedAddress = $state<NominatimResult | null>(null);
+	let suggestions = $state<AddressSuggestion[]>([]);
+	let selectedAddress = $state<AddressSuggestion | null>(null);
 	let isSearching = $state(false);
 	let isEnriching = $state(false);
 	let isSaving = $state(false);
@@ -49,36 +41,15 @@
 
 		isSearching = true;
 		try {
-			// Add Florida bias to search query
-			const searchQuery = query.toLowerCase().includes('fl') || query.toLowerCase().includes('florida')
-				? query
-				: `${query}, Jupiter, FL`;
-
-			// Nominatim API with Florida bounding box
-			const params = new URLSearchParams({
-				q: searchQuery,
-				format: 'json',
-				addressdetails: '1',
-				limit: '8',
-				countrycodes: 'us',
-				// Bounding box for Florida (roughly)
-				viewbox: '-87.6,24.5,-80.0,31.0',
-				bounded: '1'
-			});
-
-			const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-				headers: {
-					'Accept': 'application/json',
-					'User-Agent': 'HomeVenture/1.0'
-				}
+			const response = await fetch('/api/address-search', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query })
 			});
 
 			if (response.ok) {
-				const results = await response.json();
-				// Filter to only Florida results
-				suggestions = results.filter((r: NominatimResult) =>
-					r.address?.state === 'Florida' || r.display_name.includes('Florida')
-				);
+				const data = await response.json();
+				suggestions = data.suggestions || [];
 			}
 		} catch (error) {
 			console.error('Address search failed:', error);
@@ -98,9 +69,9 @@
 		}, 300);
 	}
 
-	async function selectAddress(result: NominatimResult) {
+	async function selectAddress(result: AddressSuggestion) {
 		selectedAddress = result;
-		searchQuery = result.display_name;
+		searchQuery = result.address;
 		suggestions = [];
 		showSuggestions = false;
 
@@ -110,7 +81,7 @@
 			const response = await fetch('/api/enrich', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ address: result.display_name })
+				body: JSON.stringify({ address: result.fullAddress })
 			});
 
 			if (response.ok) {
@@ -132,21 +103,8 @@
 		isEnriching = false;
 	}
 
-	function formatShortAddress(result: NominatimResult): string {
-		const addr = result.address;
-		const parts: string[] = [];
-
-		if (addr.house_number && addr.road) {
-			parts.push(`${addr.house_number} ${addr.road}`);
-		} else if (addr.road) {
-			parts.push(addr.road);
-		}
-
-		const city = addr.city || addr.town || addr.village;
-		if (city) parts.push(city);
-		if (addr.state) parts.push(addr.state);
-
-		return parts.join(', ') || result.display_name;
+	function formatShortAddress(result: AddressSuggestion): string {
+		return result.address;
 	}
 
 	async function saveProperty() {
@@ -165,8 +123,8 @@
 				hasPool,
 				poolType: hasPool ? 'Unknown' : '',
 				price,
-				lat: parseFloat(selectedAddress.lat),
-				lon: parseFloat(selectedAddress.lon),
+				lat: selectedAddress.lat,
+				lon: selectedAddress.lon,
 				source: enrichmentSource
 			};
 
@@ -228,7 +186,10 @@
 					{#each suggestions as suggestion}
 						<li>
 							<button type="button" onclick={() => selectAddress(suggestion)}>
-								{suggestion.display_name}
+								<span class="suggestion-address">{suggestion.address}</span>
+								{#if suggestion.source === 'serper'}
+									<span class="suggestion-badge">AI</span>
+								{/if}
 							</button>
 						</li>
 					{/each}
@@ -461,6 +422,26 @@
 
 	.suggestions li:last-child button {
 		border-radius: 0 0 10px 10px;
+	}
+
+	.suggestions li button {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.suggestion-address {
+		flex: 1;
+	}
+
+	.suggestion-badge {
+		background: #8B4513;
+		color: white;
+		font-size: 0.65rem;
+		padding: 2px 6px;
+		border-radius: 4px;
+		margin-left: 8px;
+		font-weight: 600;
 	}
 
 	.selected-address {
