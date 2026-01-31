@@ -22,7 +22,8 @@ export interface UserProperty {
 
 // Save a new user-added property
 export const POST: RequestHandler = async ({ request, platform }) => {
-	const property = (await request.json()) as Omit<UserProperty, 'id' | 'createdAt' | 'updatedAt'>;
+	const body = (await request.json()) as Omit<UserProperty, 'id' | 'createdAt' | 'updatedAt'> & { initialStatus?: string };
+	const { initialStatus, ...property } = body;
 
 	if (!platform?.env?.KNOCK_DATA) {
 		return json({ error: 'KV not available' }, { status: 500 });
@@ -41,9 +42,9 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 	// Store in KV with prefix 'property:'
 	await platform.env.KNOCK_DATA.put(`property:${id}`, JSON.stringify(fullProperty));
 
-	// Also set initial status to 'active'
+	// Set initial status (default to 'active' if not provided)
 	await platform.env.KNOCK_DATA.put(`status:${id}`, JSON.stringify({
-		status: 'active',
+		status: initialStatus || 'active',
 		notes: property.notes || '',
 		knockedDate: null,
 		updatedAt: new Date().toISOString()

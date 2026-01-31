@@ -333,9 +333,17 @@
 	}
 
 	// Handle new property added
-	function handlePropertyAdded(event: { property: UserProperty }) {
+	function handlePropertyAdded(event: { property: UserProperty; status: string }) {
 		const newProp = event.property;
 		userProperties = [...userProperties, newProp];
+
+		// Set the initial status in the local state
+		propertyStatuses[newProp.id] = {
+			status: event.status as PropertyStatus['status'],
+			notes: newProp.notes || '',
+			knockedDate: null,
+			updatedAt: new Date().toISOString()
+		};
 
 		// Add marker to map
 		if (map) {
@@ -357,8 +365,9 @@
 					isUserAdded: true
 				};
 				addPropertyMarker(displayProp, L);
-				// Pan to the new property
+				// Pan to the new property and select it
 				map.setView([newProp.lat, newProp.lon], 16);
+				selectProperty(newProp.id);
 			});
 		}
 	}
