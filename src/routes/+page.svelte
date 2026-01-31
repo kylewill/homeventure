@@ -180,7 +180,7 @@
 	}
 
 	function getDirections(property: Property) {
-		const dest = `${property.lat},${property.lon}`;
+		const dest = encodeURIComponent(`${property.address}, Jupiter, FL`);
 		const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
 		window.open(url, '_blank');
 	}
