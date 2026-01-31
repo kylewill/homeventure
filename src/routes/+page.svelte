@@ -230,6 +230,15 @@
 	onMount(async () => {
 		const L = await import('leaflet');
 
+		// Global function for popup button
+		(window as any).openPropertyModal = (propertyId: number) => {
+			const property = PROPERTIES.find(p => p.id === propertyId);
+			if (property) {
+				openStatusModal(property);
+				map.closePopup();
+			}
+		};
+
 		map = L.map('map').setView([26.92, -80.21], 13);
 
 		const satellite = L.tileLayer(
@@ -258,6 +267,18 @@
 					<div style="color: #8B4513; font-weight: 700; font-size: 16px; margin-bottom: 4px;">${p.price ? '$' + p.price.toLocaleString() : 'Price N/A'}</div>
 					<div style="color: #666; font-size: 13px;">${p.beds} bd · ${p.baths} ba · ${p.sqFt.toLocaleString()} sqft</div>
 					<div style="color: #888; font-size: 12px; font-style: italic; margin-top: 4px;">${p.notes}</div>
+					<button onclick="window.openPropertyModal(${p.id})" style="
+						margin-top: 10px;
+						width: 100%;
+						padding: 8px;
+						background: #8B4513;
+						color: white;
+						border: none;
+						border-radius: 8px;
+						font-size: 14px;
+						font-weight: 600;
+						cursor: pointer;
+					">🚪 Knock</button>
 				</div>
 			`);
 
