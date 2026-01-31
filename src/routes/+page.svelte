@@ -29,7 +29,7 @@
 
 	// Earth tone colors
 	const statusColors: Record<string, string> = {
-		active: '#6B8E23',      // olive - unexplored
+		active: '#8B4513',      // saddlebrown - unexplored
 		knocked: '#228B22',     // forest green - visited
 		interested: '#DAA520',  // goldenrod - promising
 		'not-interested': '#BC8F8F', // rosy brown - passed
