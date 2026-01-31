@@ -30,9 +30,9 @@
 	// Earth tone colors
 	const statusColors: Record<string, string> = {
 		active: '#6B8E23',      // olive - unexplored
-		knocked: '#DAA520',     // goldenrod - visited
-		interested: '#228B22',  // forest green - promising
-		'not-interested': '#A0522D', // sienna - passed
+		knocked: '#228B22',     // forest green - visited
+		interested: '#DAA520',  // goldenrod - promising
+		'not-interested': '#BC8F8F', // rosy brown - passed
 		hidden: '#808080'       // gray - off the map
 	};
 
@@ -884,9 +884,9 @@
 		opacity: 0.9;
 	}
 
-	.btn.visited { background: #DAA520; }
-	.btn.promising { background: #228B22; }
-	.btn.passed { background: #A0522D; }
+	.btn.visited { background: #228B22; }
+	.btn.promising { background: #DAA520; }
+	.btn.passed { background: #BC8F8F; }
 	.btn.off-map { background: #808080; }
 
 	.reset-btn {
