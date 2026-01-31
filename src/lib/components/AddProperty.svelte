@@ -199,7 +199,22 @@
 
 		{#if selectedAddress}
 			<div class="selected-address">
-				Selected: {formatShortAddress(selectedAddress)}
+				<div class="selected-header">
+					<span>Selected: {formatShortAddress(selectedAddress)}</span>
+					<a
+						href="https://www.google.com/maps?q={selectedAddress.lat},{selectedAddress.lon}"
+						target="_blank"
+						class="preview-link"
+					>
+						📍 Verify on Map
+					</a>
+				</div>
+				<div class="selected-coords">
+					{selectedAddress.lat.toFixed(5)}, {selectedAddress.lon.toFixed(5)}
+					{#if selectedAddress.source === 'serper'}
+						<span class="source-badge">AI-found</span>
+					{/if}
+				</div>
 			</div>
 
 			{#if isEnriching}
@@ -451,6 +466,42 @@
 		border-radius: 8px;
 		font-size: 0.85rem;
 		margin-bottom: 12px;
+	}
+
+	.selected-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.preview-link {
+		color: #2D5016;
+		font-weight: 600;
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.preview-link:hover {
+		text-decoration: underline;
+	}
+
+	.selected-coords {
+		font-size: 0.75rem;
+		color: #5a8a5a;
+		margin-top: 4px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.source-badge {
+		background: #8B4513;
+		color: white;
+		font-size: 0.65rem;
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-weight: 600;
 	}
 
 	.enriching {
