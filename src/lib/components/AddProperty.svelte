@@ -11,8 +11,12 @@
 		fullAddress: string;
 		lat: number;
 		lon: number;
-		source: 'nominatim' | 'serper';
 	}
+
+	const RADAR_PUB_KEY = 'prj_live_pk_b3f47297c9abc2aa722aae5006258a27e85b51c3';
+	// Jupiter, FL coordinates for biasing results
+	const JUPITER_LAT = 26.9342;
+	const JUPITER_LON = -80.0942;
 
 	let searchQuery = $state('');
 	let suggestions = $state<AddressSuggestion[]>([]);
@@ -66,15 +70,30 @@
 
 		isSearching = true;
 		try {
-			const response = await fetch('/api/address-search', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query })
+			const params = new URLSearchParams({
+				query: query,
+				near: `${JUPITER_LAT},${JUPITER_LON}`,
+				layers: 'address',
+				country: 'US',
+				limit: '8'
+			});
+
+			const response = await fetch(`https://api.radar.io/v1/search/autocomplete?${params}`, {
+				headers: {
+					'Authorization': RADAR_PUB_KEY
+				}
 			});
 
 			if (response.ok) {
 				const data = await response.json();
-				suggestions = data.suggestions || [];
+				suggestions = (data.addresses || [])
+					.filter((a: any) => a.state === 'FL' || a.stateCode === 'FL')
+					.map((a: any) => ({
+						address: a.addressLabel || a.formattedAddress,
+						fullAddress: a.formattedAddress,
+						lat: a.latitude,
+						lon: a.longitude
+					}));
 			}
 		} catch (error) {
 			console.error('Address search failed:', error);
@@ -211,10 +230,7 @@
 					{#each suggestions as suggestion}
 						<li>
 							<button type="button" onclick={() => selectAddress(suggestion)}>
-								<span class="suggestion-address">{suggestion.address}</span>
-								{#if suggestion.source === 'serper'}
-									<span class="suggestion-badge">AI</span>
-								{/if}
+								{suggestion.address}
 							</button>
 						</li>
 					{/each}
@@ -236,9 +252,6 @@
 				</div>
 				<div class="selected-coords">
 					{getEffectiveLat().toFixed(5)}, {getEffectiveLon().toFixed(5)}
-					{#if selectedAddress.source === 'serper' && !manualLat}
-						<span class="source-badge">AI-found</span>
-					{/if}
 					{#if manualLat}
 						<span class="source-badge manual">Manual</span>
 					{/if}
