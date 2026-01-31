@@ -49,25 +49,36 @@
 
 		isSearching = true;
 		try {
-			// Nominatim API - free, no API key needed
+			// Add Florida bias to search query
+			const searchQuery = query.toLowerCase().includes('fl') || query.toLowerCase().includes('florida')
+				? query
+				: `${query}, Jupiter, FL`;
+
+			// Nominatim API with Florida bounding box
 			const params = new URLSearchParams({
-				q: query,
+				q: searchQuery,
 				format: 'json',
 				addressdetails: '1',
-				limit: '5',
-				countrycodes: 'us' // Focus on US addresses
+				limit: '8',
+				countrycodes: 'us',
+				// Bounding box for Florida (roughly)
+				viewbox: '-87.6,24.5,-80.0,31.0',
+				bounded: '1'
 			});
 
 			const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
 				headers: {
 					'Accept': 'application/json',
-					// Nominatim requires a user-agent
 					'User-Agent': 'HomeVenture/1.0'
 				}
 			});
 
 			if (response.ok) {
-				suggestions = await response.json();
+				const results = await response.json();
+				// Filter to only Florida results
+				suggestions = results.filter((r: NominatimResult) =>
+					r.address?.state === 'Florida' || r.display_name.includes('Florida')
+				);
 			}
 		} catch (error) {
 			console.error('Address search failed:', error);
@@ -201,7 +212,7 @@
 				<input
 					id="address-search"
 					type="text"
-					placeholder="Start typing an address..."
+					placeholder="123 Main St, Jupiter..."
 					value={searchQuery}
 					oninput={handleSearchInput}
 					onfocus={() => showSuggestions = true}
