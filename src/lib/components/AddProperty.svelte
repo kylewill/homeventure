@@ -1,10 +1,16 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 
 	const dispatch = createEventDispatcher<{
 		close: void;
 		added: { property: any };
 	}>();
+
+	interface Props {
+		initialQuery?: string;
+	}
+
+	let { initialQuery = '' }: Props = $props();
 
 	interface AddressSuggestion {
 		address: string;
@@ -200,6 +206,15 @@
 			dispatch('close');
 		}
 	}
+
+	// Initialize with query if provided
+	onMount(() => {
+		if (initialQuery) {
+			searchQuery = initialQuery;
+			showSuggestions = true;
+			searchAddress(initialQuery);
+		}
+	});
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

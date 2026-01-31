@@ -20,6 +20,8 @@
 	let saveTimeout: ReturnType<typeof setTimeout>;
 	let selectedPropertyId: string | number | null = $state(null);
 	let locating = $state(false);
+	let addressSearch = $state('');
+	let initialAddQuery = $state('');
 
 	// Combine hardcoded and user-added properties into a unified list
 	let allProperties = $derived.by(() => {
@@ -101,6 +103,13 @@
 		return R * c;
 	}
 
+	// Simple fuzzy match - checks if all search terms appear in the address
+	function fuzzyMatch(address: string, search: string): boolean {
+		const normalizedAddress = address.toLowerCase();
+		const terms = search.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+		return terms.every(term => normalizedAddress.includes(term));
+	}
+
 	let sortedProperties = $derived.by(() => {
 		let props = allProperties.filter((p) => {
 			const status = getStatus(p.id).status;
@@ -108,6 +117,11 @@
 			if (filterStatus === 'hidden') return status === 'hidden';
 			return status === filterStatus;
 		});
+
+		// Apply address search filter
+		if (addressSearch.trim()) {
+			props = props.filter(p => fuzzyMatch(p.address, addressSearch));
+		}
 
 		if (userLocation) {
 			props = props.sort(
@@ -450,6 +464,17 @@
 			<span class="logo-text">HomeVenture</span>
 		</div>
 		<div class="header-actions">
+			<div class="search-wrapper">
+				<input
+					type="text"
+					class="address-search"
+					placeholder="Search address..."
+					bind:value={addressSearch}
+				/>
+				{#if addressSearch}
+					<button class="clear-search" onclick={() => addressSearch = ''}>×</button>
+				{/if}
+			</div>
 			<button class="add-btn" onclick={() => showAddModal = true} title="Add Property">
 				+
 			</button>
@@ -513,7 +538,14 @@
 		{#if sortedProperties.length === 0}
 			<div class="empty-state">
 				<div class="empty-icon">🏠</div>
-				<div class="empty-text">No homes in this corner of the Shire</div>
+				{#if addressSearch.trim()}
+					<div class="empty-text">No properties match "{addressSearch}"</div>
+					<button class="add-from-search" onclick={() => { initialAddQuery = addressSearch; showAddModal = true; }}>
+						+ Add this property
+					</button>
+				{:else}
+					<div class="empty-text">No homes in this corner of the Shire</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -571,8 +603,9 @@
 
 {#if showAddModal}
 	<AddProperty
-		on:close={() => showAddModal = false}
-		on:added={(e) => handlePropertyAdded(e.detail)}
+		initialQuery={initialAddQuery}
+		on:close={() => { showAddModal = false; initialAddQuery = ''; }}
+		on:added={(e) => { handlePropertyAdded(e.detail); addressSearch = ''; }}
 	/>
 {/if}
 
@@ -647,6 +680,54 @@
 	}
 
 	.add-btn:hover {
+		background: #8B4513;
+		color: white;
+	}
+
+	.search-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.address-search {
+		padding: 8px 28px 8px 12px;
+		border-radius: 20px;
+		border: 1px solid #DDD5C9;
+		background: white;
+		font-size: 0.85rem;
+		width: 140px;
+		transition: width 0.2s;
+	}
+
+	.address-search:focus {
+		outline: none;
+		border-color: #8B4513;
+		width: 180px;
+	}
+
+	.address-search::placeholder {
+		color: #999;
+	}
+
+	.clear-search {
+		position: absolute;
+		right: 6px;
+		background: #DDD5C9;
+		border: none;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		font-size: 14px;
+		line-height: 1;
+		color: #666;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.clear-search:hover {
 		background: #8B4513;
 		color: white;
 	}
@@ -886,6 +967,23 @@
 	.empty-text {
 		font-size: 1rem;
 		font-style: italic;
+	}
+
+	.add-from-search {
+		margin-top: 16px;
+		padding: 12px 24px;
+		background: #8B4513;
+		color: white;
+		border: none;
+		border-radius: 20px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.add-from-search:hover {
+		background: #6B3410;
 	}
 
 	/* Modal */
