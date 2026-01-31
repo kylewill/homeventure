@@ -3,7 +3,7 @@
 
 	const dispatch = createEventDispatcher<{
 		close: void;
-		added: { property: any };
+		added: { property: any; status: string };
 	}>();
 
 	interface Props {
@@ -43,6 +43,16 @@
 	let notes = $state('');
 	let enrichmentSource = $state('');
 	let enrichmentUrl = $state('');
+	let selectedStatus = $state<'active' | 'interested' | 'toview' | 'knocked' | 'not-interested' | 'hidden'>('active');
+
+	const statusOptions = [
+		{ value: 'active', label: 'Unexplored' },
+		{ value: 'interested', label: 'Promising' },
+		{ value: 'toview', label: 'On the Path' },
+		{ value: 'knocked', label: 'Visited' },
+		{ value: 'not-interested', label: 'Passed' },
+		{ value: 'hidden', label: 'Off the Map' }
+	] as const;
 	let showManualCoords = $state(false);
 	let manualLat = $state<number | null>(null);
 	let manualLon = $state<number | null>(null);
@@ -60,6 +70,7 @@
 		hasPool = false;
 		enrichmentSource = '';
 		enrichmentUrl = '';
+		selectedStatus = 'active';
 	}
 
 	function getEffectiveLat(): number {
@@ -178,7 +189,8 @@
 				price,
 				lat: getEffectiveLat(),
 				lon: getEffectiveLon(),
-				source: enrichmentSource
+				source: enrichmentSource,
+				initialStatus: selectedStatus
 			};
 
 			const response = await fetch('/api/property', {
@@ -189,7 +201,7 @@
 
 			if (response.ok) {
 				const data = await response.json();
-				dispatch('added', { property: data.property });
+				dispatch('added', { property: data.property, status: selectedStatus });
 				dispatch('close');
 			} else {
 				alert('Failed to save property');
@@ -263,6 +275,7 @@
 					<a
 						href="https://www.google.com/maps?q={getEffectiveLat()},{getEffectiveLon()}"
 						target="_blank"
+						rel="noopener noreferrer"
 						class="preview-link"
 					>
 						📍 Verify
@@ -312,7 +325,7 @@
 					<div class="enrichment-source">
 						Details from
 						{#if enrichmentUrl}
-							<a href={enrichmentUrl} target="_blank">{enrichmentSource}</a>
+							<a href={enrichmentUrl} target="_blank" rel="noopener noreferrer">{enrichmentSource}</a>
 						{:else}
 							{enrichmentSource}
 						{/if}
@@ -385,6 +398,15 @@
 							Has Pool
 						</label>
 					</div>
+				</div>
+
+				<div class="form-field status-field">
+					<label for="status">Status</label>
+					<select id="status" bind:value={selectedStatus}>
+						{#each statusOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
 				</div>
 
 				<div class="form-field notes-field">
@@ -723,6 +745,27 @@
 		width: 18px;
 		height: 18px;
 		accent-color: #8B4513;
+	}
+
+	.status-field {
+		margin-bottom: 16px;
+	}
+
+	.status-field select {
+		width: 100%;
+		padding: 10px;
+		border: 1px solid #DDD5C9;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		background: #FAF6F0;
+		color: #3D3D3D;
+		cursor: pointer;
+	}
+
+	.status-field select:focus {
+		outline: none;
+		border-color: #8B4513;
+		background: white;
 	}
 
 	.notes-field {
