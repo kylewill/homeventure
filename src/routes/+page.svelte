@@ -179,6 +179,14 @@
 		selectProperty(property.id);
 	}
 
+	function getDirections(property: Property) {
+		// Uses Google Maps URL which works on both iOS and Android
+		// Opens native app if installed, otherwise opens in browser
+		const dest = `${property.lat},${property.lon}`;
+		const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+		window.open(url, '_blank');
+	}
+
 	function selectProperty(propertyId: number) {
 		selectedPropertyId = propertyId;
 		// Scroll the card into view
@@ -372,9 +380,14 @@
 				{/if}
 				<div class="card-footer">
 					<span class="status-badge" style="background: {statusColors[status.status]}">{statusLabels[status.status]}</span>
-					<button class="knock-btn" onclick={(e) => { e.stopPropagation(); openStatusModal(property); }}>
-						🚪 Knock
-					</button>
+					<div class="card-actions">
+						<button class="directions-btn" onclick={(e) => { e.stopPropagation(); getDirections(property); }}>
+							🧭
+						</button>
+						<button class="knock-btn" onclick={(e) => { e.stopPropagation(); openStatusModal(property); }}>
+							🚪 Knock
+						</button>
+					</div>
 				</div>
 			</div>
 		{/each}
@@ -398,6 +411,10 @@
 
 			<div class="modal-price">{selectedProperty.price ? '$' + selectedProperty.price.toLocaleString() : 'Price N/A'}</div>
 			<div class="modal-details">{selectedProperty.beds} bd · {selectedProperty.baths} ba · {selectedProperty.sqFt.toLocaleString()} sqft</div>
+
+			<button class="directions-btn-large" onclick={() => getDirections(selectedProperty)}>
+				🧭 Get Directions
+			</button>
 
 			{#if selectedProperty.notes}
 				<div class="modal-original-notes">"{selectedProperty.notes}"</div>
@@ -667,6 +684,31 @@
 		background: #6B3410;
 	}
 
+	.card-actions {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.directions-btn {
+		background: #2D5016;
+		color: white;
+		border: none;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		font-size: 1.1rem;
+		cursor: pointer;
+		transition: background 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.directions-btn:hover {
+		background: #1D3610;
+	}
+
 	.empty-state {
 		text-align: center;
 		padding: 40px 20px;
@@ -734,6 +776,24 @@
 		font-size: 0.9rem;
 		color: #666;
 		margin-bottom: 12px;
+	}
+
+	.directions-btn-large {
+		width: 100%;
+		padding: 12px;
+		background: #2D5016;
+		color: white;
+		border: none;
+		border-radius: 10px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		margin-bottom: 16px;
+		transition: background 0.2s;
+	}
+
+	.directions-btn-large:hover {
+		background: #1D3610;
 	}
 
 	.modal-original-notes {
