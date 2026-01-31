@@ -12,7 +12,7 @@
 	let propertyStatuses: Record<number, PropertyStatus> = $state({...data.statuses});
 	let selectedProperty: Property | null = $state(null);
 	let showStatusModal = $state(false);
-	let filterStatus = $state<string>('active');
+	let filterStatus = $state<string>('all');
 	let notesValue = $state('');
 	let saveTimeout: ReturnType<typeof setTimeout>;
 	let selectedPropertyId: number | null = $state(null);
