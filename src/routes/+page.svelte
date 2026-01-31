@@ -343,12 +343,11 @@
 		<div class="filter-wrapper">
 			<span class="filter-label">Your Quest</span>
 			<select bind:value={filterStatus}>
+				<option value="all">All Homes</option>
 				<option value="active">Unexplored ({counts.active})</option>
 				<option value="knocked">Visited ({counts.knocked})</option>
 				<option value="interested">Promising ({counts.interested})</option>
-				<option value="not-interested">Passed ({counts['not-interested']})</option>
 				<option value="hidden">Off the Map ({counts.hidden})</option>
-				<option value="all">All Homes</option>
 			</select>
 		</div>
 	</header>
@@ -445,9 +444,6 @@
 				</button>
 				<button class="btn promising" onclick={() => setStatus('interested')}>
 					⭐ Promising
-				</button>
-				<button class="btn passed" onclick={() => setStatus('not-interested')}>
-					👋 Passed
 				</button>
 				<button class="btn off-map" onclick={() => setStatus('hidden')}>
 					🗺️ Off the Map
@@ -886,7 +882,6 @@
 
 	.btn.visited { background: #228B22; }
 	.btn.promising { background: #DAA520; }
-	.btn.passed { background: #BC8F8F; }
 	.btn.off-map { background: #808080; }
 
 	.reset-btn {
