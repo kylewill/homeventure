@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { PROPERTIES, type Property, type PropertyStatus } from '$lib/data/properties';
+	import { PROPERTIES, type Property, type PropertyStatus, type UserProperty, type DisplayProperty } from '$lib/data/properties';
+	import AddProperty from '$lib/components/AddProperty.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -9,14 +10,55 @@
 	let userMarker: L.Marker;
 	let userLocation: { lat: number; lon: number } | null = $state(null);
 	let watchId: number;
-	let propertyStatuses: Record<number, PropertyStatus> = $state({...data.statuses});
-	let selectedProperty: Property | null = $state(null);
+	let propertyStatuses: Record<string | number, PropertyStatus> = $state({...data.statuses});
+	let userProperties: UserProperty[] = $state([...data.userProperties]);
+	let selectedProperty: DisplayProperty | null = $state(null);
 	let showStatusModal = $state(false);
+	let showAddModal = $state(false);
 	let filterStatus = $state<string>('all');
 	let notesValue = $state('');
 	let saveTimeout: ReturnType<typeof setTimeout>;
-	let selectedPropertyId: number | null = $state(null);
+	let selectedPropertyId: string | number | null = $state(null);
 	let locating = $state(false);
+
+	// Combine hardcoded and user-added properties into a unified list
+	let allProperties = $derived.by(() => {
+		const hardcoded: DisplayProperty[] = PROPERTIES.map(p => ({
+			id: p.id,
+			address: p.address,
+			notes: p.notes,
+			beds: p.beds,
+			baths: p.baths,
+			sqFt: p.sqFt,
+			yearBuilt: p.yearBuilt,
+			construction: p.construction,
+			hasPool: p.hasPool,
+			poolType: p.poolType,
+			price: p.price,
+			lat: p.lat,
+			lon: p.lon,
+			isUserAdded: false
+		}));
+
+		const userAdded: DisplayProperty[] = userProperties.map(p => ({
+			id: p.id,
+			address: p.address,
+			notes: p.notes,
+			beds: p.beds,
+			baths: p.baths,
+			sqFt: p.sqFt,
+			yearBuilt: p.yearBuilt,
+			construction: p.construction,
+			hasPool: p.hasPool,
+			poolType: p.poolType,
+			price: p.price,
+			lat: p.lat,
+			lon: p.lon,
+			isUserAdded: true
+		}));
+
+		return [...hardcoded, ...userAdded];
+	});
 
 	// Hobbit-themed status labels
 	const statusLabels: Record<string, string> = {
@@ -36,7 +78,7 @@
 		hidden: '#808080'       // gray - off the map
 	};
 
-	function getStatus(propertyId: number): PropertyStatus {
+	function getStatus(propertyId: string | number): PropertyStatus {
 		return propertyStatuses[propertyId] || {
 			status: 'active',
 			notes: '',
@@ -60,7 +102,7 @@
 	}
 
 	let sortedProperties = $derived.by(() => {
-		let props = PROPERTIES.filter((p) => {
+		let props = allProperties.filter((p) => {
 			const status = getStatus(p.id).status;
 			if (filterStatus === 'all') return status !== 'hidden';
 			if (filterStatus === 'hidden') return status === 'hidden';
@@ -77,7 +119,7 @@
 		return props;
 	});
 
-	async function saveToServer(propertyId: number, status: PropertyStatus) {
+	async function saveToServer(propertyId: string | number, status: PropertyStatus) {
 		try {
 			await fetch('/api/status', {
 				method: 'POST',
@@ -89,7 +131,7 @@
 		}
 	}
 
-	async function updateStatus(propertyId: number, newStatus: PropertyStatus) {
+	async function updateStatus(propertyId: string | number, newStatus: PropertyStatus) {
 		propertyStatuses[propertyId] = newStatus;
 		await saveToServer(propertyId, newStatus);
 	}
@@ -113,7 +155,7 @@
 		}, 500);
 	}
 
-	function openStatusModal(property: Property) {
+	function openStatusModal(property: DisplayProperty) {
 		selectedProperty = property;
 		const savedNotes = getStatus(property.id).notes;
 		notesValue = savedNotes || property.notes;
@@ -140,7 +182,7 @@
 		closeStatusModal();
 	}
 
-	let markers: Record<number, L.Marker> = {};
+	let markers: Record<string | number, L.Marker> = {};
 
 	function createMarkerIcon(color: string) {
 		return L.divIcon({
@@ -168,31 +210,31 @@
 		});
 	}
 
-	function updateMarkerColor(propertyId: number, status: string) {
+	function updateMarkerColor(propertyId: string | number, status: string) {
 		const marker = markers[propertyId];
 		if (marker) {
 			marker.setIcon(createMarkerIcon(statusColors[status] || statusColors.active));
 		}
 	}
 
-	function panToProperty(property: Property) {
+	function panToProperty(property: DisplayProperty) {
 		map.setView([property.lat, property.lon], 20);
 		selectProperty(property.id);
 	}
 
-	function getDirections(property: Property) {
+	function getDirections(property: DisplayProperty) {
 		const dest = encodeURIComponent(`${property.address}, Jupiter, FL`);
 		const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
 		window.open(url, '_blank');
 	}
 
-	function openRedfin(property: Property) {
+	function openRedfin(property: DisplayProperty) {
 		const query = encodeURIComponent(`site:redfin.com ${property.address} Jupiter FL`);
 		const url = `https://www.google.com/search?q=${query}`;
 		window.open(url, '_blank');
 	}
 
-	function selectProperty(propertyId: number) {
+	function selectProperty(propertyId: string | number) {
 		selectedPropertyId = propertyId;
 		// Scroll the card into view
 		setTimeout(() => {
@@ -227,12 +269,90 @@
 		);
 	}
 
+	// Helper to create popup content for a property
+	function createPopupContent(p: DisplayProperty): string {
+		const bedsDisplay = p.beds ?? '—';
+		const bathsDisplay = p.baths ?? '—';
+		const sqftDisplay = p.sqFt ? p.sqFt.toLocaleString() : '—';
+		const idParam = typeof p.id === 'string' ? `'${p.id}'` : p.id;
+
+		return `
+			<div style="font-family: -apple-system, system-ui, sans-serif; min-width: 200px;">
+				<div style="font-weight: 600; font-size: 14px; color: #3D3D3D; margin-bottom: 4px;">${p.address}</div>
+				<div style="color: #8B4513; font-weight: 700; font-size: 16px; margin-bottom: 4px;">${p.price ? '$' + p.price.toLocaleString() : 'Price N/A'}</div>
+				<div style="color: #666; font-size: 13px;">${bedsDisplay} bd · ${bathsDisplay} ba · ${sqftDisplay} sqft</div>
+				<div style="color: #888; font-size: 12px; font-style: italic; margin-top: 4px;">${p.notes || ''}</div>
+				<button onclick="window.openPropertyModal(${idParam})" style="
+					margin-top: 10px;
+					width: 100%;
+					padding: 8px;
+					background: #8B4513;
+					color: white;
+					border: none;
+					border-radius: 8px;
+					font-size: 14px;
+					font-weight: 600;
+					cursor: pointer;
+				">🚪 Knock</button>
+			</div>
+		`;
+	}
+
+	// Add a marker for a property to the map
+	function addPropertyMarker(p: DisplayProperty, L: any) {
+		const status = getStatus(p.id).status;
+		const color = statusColors[status] || statusColors.active;
+		const marker = L.marker([p.lat, p.lon], {
+			icon: createMarkerIcon(color)
+		}).addTo(map);
+
+		marker.bindPopup(createPopupContent(p));
+
+		marker.on('click', () => {
+			map.setView([p.lat, p.lon], 20);
+			selectProperty(p.id);
+		});
+
+		markers[p.id] = marker;
+	}
+
+	// Handle new property added
+	function handlePropertyAdded(event: { property: UserProperty }) {
+		const newProp = event.property;
+		userProperties = [...userProperties, newProp];
+
+		// Add marker to map
+		if (map) {
+			import('leaflet').then(L => {
+				const displayProp: DisplayProperty = {
+					id: newProp.id,
+					address: newProp.address,
+					notes: newProp.notes,
+					beds: newProp.beds,
+					baths: newProp.baths,
+					sqFt: newProp.sqFt,
+					yearBuilt: newProp.yearBuilt,
+					construction: newProp.construction,
+					hasPool: newProp.hasPool,
+					poolType: newProp.poolType,
+					price: newProp.price,
+					lat: newProp.lat,
+					lon: newProp.lon,
+					isUserAdded: true
+				};
+				addPropertyMarker(displayProp, L);
+				// Pan to the new property
+				map.setView([newProp.lat, newProp.lon], 16);
+			});
+		}
+	}
+
 	onMount(async () => {
 		const L = await import('leaflet');
 
 		// Global function for popup button
-		(window as any).openPropertyModal = (propertyId: number) => {
-			const property = PROPERTIES.find(p => p.id === propertyId);
+		(window as any).openPropertyModal = (propertyId: string | number) => {
+			const property = allProperties.find(p => p.id === propertyId);
 			if (property) {
 				openStatusModal(property);
 				map.closePopup();
@@ -254,41 +374,8 @@
 		satellite.addTo(map);
 		L.control.layers({ Satellite: satellite, Streets: streets }).addTo(map);
 
-		PROPERTIES.forEach((p) => {
-			const status = getStatus(p.id).status;
-			const color = statusColors[status] || statusColors.active;
-			const marker = L.marker([p.lat, p.lon], {
-				icon: createMarkerIcon(color)
-			}).addTo(map);
-
-			marker.bindPopup(`
-				<div style="font-family: -apple-system, system-ui, sans-serif; min-width: 200px;">
-					<div style="font-weight: 600; font-size: 14px; color: #3D3D3D; margin-bottom: 4px;">${p.address}</div>
-					<div style="color: #8B4513; font-weight: 700; font-size: 16px; margin-bottom: 4px;">${p.price ? '$' + p.price.toLocaleString() : 'Price N/A'}</div>
-					<div style="color: #666; font-size: 13px;">${p.beds} bd · ${p.baths} ba · ${p.sqFt.toLocaleString()} sqft</div>
-					<div style="color: #888; font-size: 12px; font-style: italic; margin-top: 4px;">${p.notes}</div>
-					<button onclick="window.openPropertyModal(${p.id})" style="
-						margin-top: 10px;
-						width: 100%;
-						padding: 8px;
-						background: #8B4513;
-						color: white;
-						border: none;
-						border-radius: 8px;
-						font-size: 14px;
-						font-weight: 600;
-						cursor: pointer;
-					">🚪 Knock</button>
-				</div>
-			`);
-
-			marker.on('click', () => {
-				map.setView([p.lat, p.lon], 20);
-				selectProperty(p.id);
-			});
-
-			markers[p.id] = marker;
-		});
+		// Add markers for all properties (hardcoded + user-added)
+		allProperties.forEach((p) => addPropertyMarker(p, L));
 
 		// Add locate button control
 		const LocateControl = L.Control.extend({
@@ -345,11 +432,11 @@
 
 	function getStatusCounts() {
 		return {
-			active: PROPERTIES.filter(p => getStatus(p.id).status === 'active').length,
-			knocked: PROPERTIES.filter(p => getStatus(p.id).status === 'knocked').length,
-			interested: PROPERTIES.filter(p => getStatus(p.id).status === 'interested').length,
-			'not-interested': PROPERTIES.filter(p => getStatus(p.id).status === 'not-interested').length,
-			hidden: PROPERTIES.filter(p => getStatus(p.id).status === 'hidden').length
+			active: allProperties.filter(p => getStatus(p.id).status === 'active').length,
+			knocked: allProperties.filter(p => getStatus(p.id).status === 'knocked').length,
+			interested: allProperties.filter(p => getStatus(p.id).status === 'interested').length,
+			'not-interested': allProperties.filter(p => getStatus(p.id).status === 'not-interested').length,
+			hidden: allProperties.filter(p => getStatus(p.id).status === 'hidden').length
 		};
 	}
 
@@ -362,15 +449,20 @@
 			<span class="door-icon">⌂</span>
 			<span class="logo-text">HomeVenture</span>
 		</div>
-		<div class="filter-wrapper">
-			<span class="filter-label">Your Quest</span>
-			<select bind:value={filterStatus}>
-				<option value="all">All Homes</option>
-				<option value="active">Unexplored ({counts.active})</option>
-				<option value="knocked">Visited ({counts.knocked})</option>
-				<option value="interested">Promising ({counts.interested})</option>
-				<option value="hidden">Off the Map ({counts.hidden})</option>
-			</select>
+		<div class="header-actions">
+			<button class="add-btn" onclick={() => showAddModal = true} title="Add Property">
+				+
+			</button>
+			<div class="filter-wrapper">
+				<span class="filter-label">Your Quest</span>
+				<select bind:value={filterStatus}>
+					<option value="all">All Homes</option>
+					<option value="active">Unexplored ({counts.active})</option>
+					<option value="knocked">Visited ({counts.knocked})</option>
+					<option value="interested">Promising ({counts.interested})</option>
+					<option value="hidden">Off the Map ({counts.hidden})</option>
+				</select>
+			</div>
 		</div>
 	</header>
 
@@ -396,9 +488,9 @@
 						<span class="distance">{distance.toFixed(2)} mi away</span>
 					{/if}
 				</div>
-				<div class="address">{property.address}</div>
+				<div class="address">{property.address}{#if property.isUserAdded}<span class="user-badge">Added</span>{/if}</div>
 				<div class="details">
-					{property.beds} bd · {property.baths} ba · {property.sqFt.toLocaleString()} sqft · {property.yearBuilt}
+					{property.beds ?? '—'} bd · {property.baths ?? '—'} ba · {property.sqFt ? property.sqFt.toLocaleString() : '—'} sqft{#if property.yearBuilt} · {property.yearBuilt}{/if}
 					{#if property.hasPool}<span class="pool-badge">Pool</span>{/if}
 				</div>
 				{#if status.notes || property.notes}
@@ -477,6 +569,13 @@
 	</div>
 {/if}
 
+{#if showAddModal}
+	<AddProperty
+		on:close={() => showAddModal = false}
+		on:added={(e) => handlePropertyAdded(e.detail)}
+	/>
+{/if}
+
 <style>
 	:global(body) {
 		margin: 0;
@@ -522,6 +621,34 @@
 		font-weight: 700;
 		color: #8B4513;
 		letter-spacing: -0.5px;
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.add-btn {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border: 2px solid #8B4513;
+		background: white;
+		color: #8B4513;
+		font-size: 1.5rem;
+		font-weight: 600;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+		line-height: 1;
+	}
+
+	.add-btn:hover {
+		background: #8B4513;
+		color: white;
 	}
 
 	.filter-wrapper {
@@ -664,6 +791,18 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 		margin-left: 6px;
+	}
+
+	.user-badge {
+		display: inline-block;
+		background: #EAE4F4;
+		color: #5D4E8C;
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-size: 0.7rem;
+		font-weight: 500;
+		margin-left: 8px;
+		vertical-align: middle;
 	}
 
 	.notes {

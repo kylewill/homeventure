@@ -19,6 +19,44 @@ export interface Property {
   propertyId: number;
 }
 
+// User-added properties have string IDs and nullable fields
+export interface UserProperty {
+  id: string; // UUID starting with 'u'
+  address: string;
+  notes: string;
+  beds: number | null;
+  baths: number | null;
+  sqFt: number | null;
+  yearBuilt: number | null;
+  construction: string;
+  hasPool: boolean;
+  poolType: string;
+  price: number | null;
+  lat: number;
+  lon: number;
+  createdAt: string;
+  updatedAt: string;
+  source?: string;
+}
+
+// Unified type for display - can be either hardcoded or user-added
+export type DisplayProperty = {
+  id: number | string;
+  address: string;
+  notes: string;
+  beds: number | null;
+  baths: number | null;
+  sqFt: number | null;
+  yearBuilt: number | null;
+  construction: string;
+  hasPool: boolean;
+  poolType: string;
+  price: number | null;
+  lat: number;
+  lon: number;
+  isUserAdded?: boolean;
+};
+
 export interface PropertyStatus {
   status: 'active' | 'knocked' | 'hidden' | 'interested' | 'not-interested';
   notes: string;
