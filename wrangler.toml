@@ -6,3 +6,13 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [[kv_namespaces]]
 binding = "KNOCK_DATA"
 id = "0626d0de949c442bbadcd158cd2afa14"
+
+# API keys for property enrichment
+# Set these as secrets in Cloudflare dashboard or via `wrangler secret put`
+# SERPER_API_KEY - for Google search via serper.dev
+# GEMINI_API_KEY - for AI-powered property detail extraction
+
+[vars]
+# These can be overridden with secrets in production
+# SERPER_API_KEY = ""
+# GEMINI_API_KEY = ""

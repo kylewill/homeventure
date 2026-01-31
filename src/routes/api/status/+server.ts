@@ -4,7 +4,7 @@ import type { PropertyStatus } from '$lib/data/properties';
 
 export const POST: RequestHandler = async ({ request, platform }) => {
 	const { propertyId, status } = (await request.json()) as {
-		propertyId: number;
+		propertyId: string | number;
 		status: PropertyStatus;
 	};
 
