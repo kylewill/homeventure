@@ -67,7 +67,6 @@
 		active: 'Unexplored',
 		knocked: 'Visited',
 		interested: 'Promising',
-		'not-interested': 'Passed',
 		hidden: 'Off the Map',
 		toview: 'On the Path'
 	};
@@ -77,7 +76,6 @@
 		active: '#8B4513',      // saddlebrown - unexplored
 		knocked: '#228B22',     // forest green - visited
 		interested: '#DAA520',  // goldenrod - promising
-		'not-interested': '#BC8F8F', // rosy brown - passed
 		hidden: '#808080',      // gray - off the map
 		toview: '#4A90D9'       // blue - on the path / to view
 	};
@@ -460,7 +458,6 @@
 			active: allProperties.filter(p => getStatus(p.id).status === 'active').length,
 			knocked: allProperties.filter(p => getStatus(p.id).status === 'knocked').length,
 			interested: allProperties.filter(p => getStatus(p.id).status === 'interested').length,
-			'not-interested': allProperties.filter(p => getStatus(p.id).status === 'not-interested').length,
 			hidden: allProperties.filter(p => getStatus(p.id).status === 'hidden').length,
 			toview: allProperties.filter(p => getStatus(p.id).status === 'toview').length
 		};

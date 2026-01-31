@@ -43,14 +43,13 @@
 	let notes = $state('');
 	let enrichmentSource = $state('');
 	let enrichmentUrl = $state('');
-	let selectedStatus = $state<'active' | 'interested' | 'toview' | 'knocked' | 'not-interested' | 'hidden'>('active');
+	let selectedStatus = $state<'active' | 'interested' | 'toview' | 'knocked' | 'hidden'>('active');
 
 	const statusOptions = [
 		{ value: 'active', label: 'Unexplored' },
 		{ value: 'interested', label: 'Promising' },
 		{ value: 'toview', label: 'On the Path' },
 		{ value: 'knocked', label: 'Visited' },
-		{ value: 'not-interested', label: 'Passed' },
 		{ value: 'hidden', label: 'Off the Map' }
 	] as const;
 	let showManualCoords = $state(false);
