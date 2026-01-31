@@ -363,6 +363,7 @@
 				id="property-{property.id}"
 				class="property-card"
 				class:selected={selectedPropertyId === property.id}
+				style="border-left: 4px solid {statusColors[status.status]}"
 				role="button"
 				tabindex="0"
 				onclick={() => panToProperty(property)}
