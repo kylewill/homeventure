@@ -15,6 +15,8 @@
 	let filterStatus = $state<string>('active');
 	let notesValue = $state('');
 	let saveTimeout: ReturnType<typeof setTimeout>;
+	let selectedPropertyId: number | null = $state(null);
+	let locating = $state(false);
 
 	// Hobbit-themed status labels
 	const statusLabels: Record<string, string> = {
@@ -174,6 +176,42 @@
 
 	function panToProperty(property: Property) {
 		map.setView([property.lat, property.lon], 20);
+		selectProperty(property.id);
+	}
+
+	function selectProperty(propertyId: number) {
+		selectedPropertyId = propertyId;
+		// Scroll the card into view
+		setTimeout(() => {
+			const card = document.getElementById(`property-${propertyId}`);
+			if (card) {
+				card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			}
+		}, 100);
+	}
+
+	function locateMe() {
+		if (!navigator.geolocation) {
+			alert('Geolocation not supported');
+			return;
+		}
+		locating = true;
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+				map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+				if (userMarker) {
+					userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
+				}
+				locating = false;
+			},
+			(err) => {
+				console.error('Geolocation error:', err);
+				alert('Could not get your location. Please enable location services.');
+				locating = false;
+			},
+			{ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+		);
 	}
 
 	onMount(async () => {
@@ -212,10 +250,28 @@
 
 			marker.on('click', () => {
 				map.setView([p.lat, p.lon], 20);
+				selectProperty(p.id);
 			});
 
 			markers[p.id] = marker;
 		});
+
+		// Add locate button control
+		const LocateControl = L.Control.extend({
+			onAdd: function() {
+				const btn = L.DomUtil.create('button', 'locate-btn');
+				btn.innerHTML = '📍';
+				btn.title = 'Find my location';
+				btn.onclick = (e: Event) => {
+					e.stopPropagation();
+					e.preventDefault();
+					locateMe();
+				};
+				L.DomEvent.disableClickPropagation(btn);
+				return btn;
+			}
+		});
+		new LocateControl({ position: 'bottomright' }).addTo(map);
 
 		if (navigator.geolocation) {
 			watchId = navigator.geolocation.watchPosition(
@@ -291,7 +347,15 @@
 		{#each sortedProperties as property (property.id)}
 			{@const status = getStatus(property.id)}
 			{@const distance = userLocation ? haversineDistance(userLocation.lat, userLocation.lon, property.lat, property.lon) : null}
-			<div class="property-card" role="button" tabindex="0" onclick={() => panToProperty(property)} onkeydown={(e) => e.key === 'Enter' && panToProperty(property)}>
+			<div
+				id="property-{property.id}"
+				class="property-card"
+				class:selected={selectedPropertyId === property.id}
+				role="button"
+				tabindex="0"
+				onclick={() => panToProperty(property)}
+				onkeydown={(e) => e.key === 'Enter' && panToProperty(property)}
+			>
 				<div class="card-header">
 					<span class="price">{property.price ? '$' + property.price.toLocaleString() : 'Price N/A'}</span>
 					{#if distance !== null}
@@ -455,6 +519,30 @@
 		min-height: 280px;
 	}
 
+	:global(.locate-btn) {
+		width: 44px;
+		height: 44px;
+		background: white;
+		border: none;
+		border-radius: 8px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+		font-size: 1.4rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 10px;
+		margin-right: 10px;
+	}
+
+	:global(.locate-btn:hover) {
+		background: #FAF6F0;
+	}
+
+	:global(.locate-btn:active) {
+		background: #EDE5DA;
+	}
+
 	.property-list {
 		flex: 1;
 		overflow-y: auto;
@@ -486,6 +574,12 @@
 
 	.property-card:active {
 		transform: translateY(0);
+	}
+
+	.property-card.selected {
+		border: 2px solid #8B4513;
+		box-shadow: 0 4px 20px rgba(139, 69, 19, 0.25);
+		background: #FFFBF7;
 	}
 
 	.card-header {
