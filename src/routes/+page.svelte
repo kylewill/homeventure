@@ -68,7 +68,8 @@
 		knocked: 'Visited',
 		interested: 'Promising',
 		'not-interested': 'Passed',
-		hidden: 'Off the Map'
+		hidden: 'Off the Map',
+		toview: 'On the Path'
 	};
 
 	// Earth tone colors
@@ -77,7 +78,8 @@
 		knocked: '#228B22',     // forest green - visited
 		interested: '#DAA520',  // goldenrod - promising
 		'not-interested': '#BC8F8F', // rosy brown - passed
-		hidden: '#808080'       // gray - off the map
+		hidden: '#808080',      // gray - off the map
+		toview: '#4A90D9'       // blue - on the path / to view
 	};
 
 	function getStatus(propertyId: string | number): PropertyStatus {
@@ -450,7 +452,8 @@
 			knocked: allProperties.filter(p => getStatus(p.id).status === 'knocked').length,
 			interested: allProperties.filter(p => getStatus(p.id).status === 'interested').length,
 			'not-interested': allProperties.filter(p => getStatus(p.id).status === 'not-interested').length,
-			hidden: allProperties.filter(p => getStatus(p.id).status === 'hidden').length
+			hidden: allProperties.filter(p => getStatus(p.id).status === 'hidden').length,
+			toview: allProperties.filter(p => getStatus(p.id).status === 'toview').length
 		};
 	}
 
@@ -483,6 +486,7 @@
 				<select bind:value={filterStatus}>
 					<option value="all">All Homes</option>
 					<option value="active">Unexplored ({counts.active})</option>
+					<option value="toview">On the Path ({counts.toview})</option>
 					<option value="knocked">Visited ({counts.knocked})</option>
 					<option value="interested">Promising ({counts.interested})</option>
 					<option value="hidden">Off the Map ({counts.hidden})</option>
@@ -581,6 +585,9 @@
 			<div class="notes-hint">Notes save automatically</div>
 
 			<div class="status-buttons">
+				<button class="btn toview" onclick={() => setStatus('toview')}>
+					🧭 On the Path
+				</button>
 				<button class="btn visited" onclick={() => setStatus('knocked')}>
 					🚪 Visited
 				</button>
@@ -1135,6 +1142,7 @@
 		opacity: 0.9;
 	}
 
+	.btn.toview { background: #4A90D9; }
 	.btn.visited { background: #228B22; }
 	.btn.promising { background: #DAA520; }
 	.btn.off-map { background: #808080; }

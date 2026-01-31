@@ -58,7 +58,7 @@ export type DisplayProperty = {
 };
 
 export interface PropertyStatus {
-  status: 'active' | 'knocked' | 'hidden' | 'interested' | 'not-interested';
+  status: 'active' | 'knocked' | 'hidden' | 'interested' | 'not-interested' | 'toview';
   notes: string;
   knockedDate: string | null;
   updatedAt: string;
