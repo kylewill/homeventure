@@ -32,6 +32,31 @@
 	let hasPool = $state(false);
 	let notes = $state('');
 	let enrichmentSource = $state('');
+	let showManualCoords = $state(false);
+	let manualLat = $state<number | null>(null);
+	let manualLon = $state<number | null>(null);
+
+	function clearSelection() {
+		selectedAddress = null;
+		showManualCoords = false;
+		manualLat = null;
+		manualLon = null;
+		beds = null;
+		baths = null;
+		sqFt = null;
+		yearBuilt = null;
+		price = null;
+		hasPool = false;
+		enrichmentSource = '';
+	}
+
+	function getEffectiveLat(): number {
+		return manualLat ?? selectedAddress?.lat ?? 0;
+	}
+
+	function getEffectiveLon(): number {
+		return manualLon ?? selectedAddress?.lon ?? 0;
+	}
 
 	async function searchAddress(query: string) {
 		if (query.length < 3) {
@@ -123,8 +148,8 @@
 				hasPool,
 				poolType: hasPool ? 'Unknown' : '',
 				price,
-				lat: selectedAddress.lat,
-				lon: selectedAddress.lon,
+				lat: getEffectiveLat(),
+				lon: getEffectiveLon(),
 				source: enrichmentSource
 			};
 
@@ -202,19 +227,51 @@
 				<div class="selected-header">
 					<span>Selected: {formatShortAddress(selectedAddress)}</span>
 					<a
-						href="https://www.google.com/maps?q={selectedAddress.lat},{selectedAddress.lon}"
+						href="https://www.google.com/maps?q={getEffectiveLat()},{getEffectiveLon()}"
 						target="_blank"
 						class="preview-link"
 					>
-						📍 Verify on Map
+						📍 Verify
 					</a>
 				</div>
 				<div class="selected-coords">
-					{selectedAddress.lat.toFixed(5)}, {selectedAddress.lon.toFixed(5)}
-					{#if selectedAddress.source === 'serper'}
+					{getEffectiveLat().toFixed(5)}, {getEffectiveLon().toFixed(5)}
+					{#if selectedAddress.source === 'serper' && !manualLat}
 						<span class="source-badge">AI-found</span>
 					{/if}
+					{#if manualLat}
+						<span class="source-badge manual">Manual</span>
+					{/if}
 				</div>
+				<div class="location-actions">
+					{#if !showManualCoords}
+						<button type="button" class="fix-btn" onclick={() => showManualCoords = true}>
+							Wrong location? Fix coords
+						</button>
+					{/if}
+					<button type="button" class="clear-btn" onclick={clearSelection}>
+						Start over
+					</button>
+				</div>
+				{#if showManualCoords}
+					<div class="manual-coords">
+						<p class="manual-hint">Paste coords from Google Maps (right-click → copy coordinates)</p>
+						<div class="coord-inputs">
+							<input
+								type="number"
+								step="any"
+								placeholder="Latitude (e.g. 26.937)"
+								bind:value={manualLat}
+							/>
+							<input
+								type="number"
+								step="any"
+								placeholder="Longitude (e.g. -80.233)"
+								bind:value={manualLon}
+							/>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			{#if isEnriching}
@@ -502,6 +559,60 @@
 		padding: 2px 6px;
 		border-radius: 4px;
 		font-weight: 600;
+	}
+
+	.source-badge.manual {
+		background: #2D5016;
+	}
+
+	.location-actions {
+		display: flex;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.fix-btn, .clear-btn {
+		background: none;
+		border: none;
+		color: #666;
+		font-size: 0.75rem;
+		cursor: pointer;
+		padding: 0;
+		text-decoration: underline;
+	}
+
+	.fix-btn:hover, .clear-btn:hover {
+		color: #8B4513;
+	}
+
+	.manual-coords {
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px dashed #ccc;
+	}
+
+	.manual-hint {
+		font-size: 0.7rem;
+		color: #888;
+		margin: 0 0 8px 0;
+	}
+
+	.coord-inputs {
+		display: flex;
+		gap: 8px;
+	}
+
+	.coord-inputs input {
+		flex: 1;
+		padding: 8px;
+		border: 1px solid #DDD5C9;
+		border-radius: 6px;
+		font-size: 0.8rem;
+	}
+
+	.coord-inputs input:focus {
+		outline: none;
+		border-color: #8B4513;
 	}
 
 	.enriching {
