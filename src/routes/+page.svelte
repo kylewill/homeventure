@@ -186,8 +186,8 @@
 	}
 
 	function openRedfin(property: Property) {
-		const query = encodeURIComponent(property.address + ', Jupiter, FL');
-		const url = `https://www.redfin.com/search?q=${query}`;
+		const query = encodeURIComponent(`site:redfin.com ${property.address} Jupiter FL`);
+		const url = `https://www.google.com/search?q=${query}`;
 		window.open(url, '_blank');
 	}
 
